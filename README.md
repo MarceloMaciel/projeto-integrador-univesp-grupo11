@@ -1,32 +1,51 @@
-# projeto-integrador-univesp-grupo11
-Este repositório tem como objetivo guardar o código fonte do projeto integrador desenvolvido pelo grupo 11 da univesp.
+Projeto Integrador Univesp - Grupo 11
+Este repositório tem como objetivo guardar o código-fonte do projeto integrador desenvolvido pelo grupo 11 da Univesp.
 
-# Instruções para executar a aplicação (ambiente Windows)
-1. Instalar Python
-    Executar "winget install 9NQ7512CXL7T" no terminal, ou baixar e instalar na versão mais atual a partir do site oficial: https://www.python.org/downloads/
-    Para checar se o python foi devidamente instalado, rode o comando "python --version" ou "py --version"'.
-   
-2. Instalar Git
-    Executar "winget install --id Git.Git -e --source winget" no terminal, ou baixar e instalar na versão mais atual a partir do site oficial: https://git-scm.com/
+Instruções para executar a aplicação (Ambiente Windows)
+1. Pré-requisitos (Instalação)
+Instalar Python:
+Execute winget install 9NQ7512CXL7T no terminal, ou baixe a versão mais atual no site oficial: python.org/downloads.
 
-3. Clonar o repositório
-    Escolher um local no seu computador e clonar o repositório com o comando: "git clone https://github.com/MarceloMaciel/projeto-integrador-univesp-grupo11.git"
+Para checar a instalação, rode: python --version ou py --version.
 
-4. Criar ambiente virtual (dentro da pasta do projeto):
-   python -m venv venv
+Instalar Git:
+Execute winget install --id Git.Git -e --source winget no terminal, ou baixe a versão mais atual no site oficial: git-scm.com.
 
-5. Ativar o ambiente:
-   venv\Scripts\activate
-   
-6. Em caso de erro ao tentar "Ativar o ambiente (passo 5)": 
-    Execute o comando "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" para permitir a utilização do powershell
-   
-7. Instalar dependências:
-   pip install -r requirements.txt
+2. Configuração do Ambiente
+Clonar o repositório:
+Escolha um local no seu computador e execute:
 
-8. Aplicar migrations:
-   python manage.py migrate
+PowerShell
+git clone https://github.com/MarceloMaciel/projeto-integrador-univesp-grupo11.git
+cd projeto-integrador-univesp-grupo11
+Criar ambiente virtual:
 
-9. Rodar o projeto:
-   python manage.py runserver
+PowerShell
+python -m venv venv
+Ativar o ambiente virtual:
 
+PowerShell
+venv\Scripts\activate
+Nota: Se encontrar erro de permissão no PowerShell, execute:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+Instalar dependências:
+
+PowerShell
+pip install -r requirements.txt
+3. Execução do Projeto
+Para rodar os comandos do Django, é necessário entrar na subpasta onde o arquivo manage.py está localizado:
+
+Entrar na pasta do sistema:
+
+PowerShell
+cd BibliotecaPI
+Aplicar migrations (Configurar Banco de Dados):
+
+PowerShell
+python manage.py migrate
+Rodar o servidor:
+
+PowerShell
+python manage.py runserver
+O sistema estará disponível no seu navegador no endereço: http://127.0.0.1:8000/
