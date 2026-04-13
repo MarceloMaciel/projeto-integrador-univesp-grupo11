@@ -1,0 +1,9 @@
+﻿ROLE_ADMIN = 'ADMIN'
+ROLE_BIBLIOTECARIO = 'BIBLIOTECARIO'
+ROLE_LEITOR = 'LEITOR'
+
+ROLE_CHOICES = [
+    (ROLE_ADMIN, 'Administrador'),
+    (ROLE_BIBLIOTECARIO, 'Bibliotecário'),
+    (ROLE_LEITOR, 'Leitor'),
+]
