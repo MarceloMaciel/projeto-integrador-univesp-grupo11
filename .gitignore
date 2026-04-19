@@ -8,6 +8,14 @@ venv/
 # Banco local
 db.sqlite3
 
+# Variaveis de ambiente locais
+.env
+!.env.example
+
+# Artefatos gerados pelo Django
+media/
+staticfiles/
+
 # IDE
 .vscode/
 .idea/

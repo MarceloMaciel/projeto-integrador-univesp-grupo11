@@ -1,0 +1,24 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Registrar devolução | BibliotecaPI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning"><strong>Registrar devolução</strong></div>
+            <div class="card-body">
+                <p><strong>Empréstimo:</strong> #{{ emprestimo.id }}</p>
+                <p><strong>Exemplar:</strong> {{ emprestimo.exemplar.codigo_tombo }} - {{ emprestimo.exemplar.livro.titulo }}</p>
+                <p><strong>Prevista:</strong> {{ emprestimo.data_prevista_devolucao|date:'d/m/Y' }}</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {% include 'partials/form_fields.html' %}
+                    <button type="submit" class="btn btn-success">Confirmar devolução</button>
+                    <a href="{% url 'circulacao:emprestimo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
