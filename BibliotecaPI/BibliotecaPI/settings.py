@@ -1,7 +1,7 @@
 ﻿"""
 Django settings for BibliotecaPI project.
 """
-
+import dj_database_url
 import os
 import sys
 from pathlib import Path
@@ -114,17 +114,8 @@ if DB_ENGINE == 'django.db.backends.sqlite3':
     if not sqlite_path.is_absolute():
         sqlite_path = BASE_DIR / sqlite_path
 
-    DATABASES = {
-        'default': {
-            # 'ENGINE': 'django.db.backends.sqlite3',
-            # 'NAME': sqlite_path,
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'BibliotecaPI',
-            'USER': 'svcUserDbProjetoPi',
-            'PASSWORD': '19042026@PI',
-            'HOST': 'localhost',
-            'PORT': '5432',
-        }
+DATABASES = {
+        'default': dj_database_url.config()
     }
 else:
     db_options = {
