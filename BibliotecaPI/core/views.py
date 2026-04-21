@@ -137,5 +137,6 @@ def cadastrar_livro_lote(request):
             return redirect('home')
     else:
         form = LivroForm()
+        
 
     return render(request, 'core/cadastrar_livro_lote.html', {'form': form, 'lote': lote, 'restantes': restantes})
