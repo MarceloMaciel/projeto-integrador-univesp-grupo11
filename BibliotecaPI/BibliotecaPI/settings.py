@@ -45,7 +45,7 @@ def env_list(name: str, default: str = '') -> list[str]:
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 DEBUG = env_bool('DEBUG', True)
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '127.0.0.1,localhost')
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '127.0.0.1,localhost', 'projeto-integrador-univesp-grupo11.onrender.com')
 RUNNING_TESTS = 'test' in sys.argv
 
 if not DEBUG and not RUNNING_TESTS and SECRET_KEY == 'django-insecure-change-me-in-production':
@@ -121,7 +121,7 @@ else:
     db_options = {
         'sslmode': os.getenv('DB_SSLMODE', 'require'),
     }
-    
+
     ssl_root_cert = os.getenv('DB_SSLROOTCERT')
     if ssl_root_cert:
         db_options['sslrootcert'] = ssl_root_cert
