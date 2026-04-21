@@ -114,13 +114,14 @@ if DB_ENGINE == 'django.db.backends.sqlite3':
     if not sqlite_path.is_absolute():
         sqlite_path = BASE_DIR / sqlite_path
 
-DATABASES = {
-        'default': dj_database_url.config()
+    DATABASES = {
+            'default': dj_database_url.config()
     }
 else:
     db_options = {
         'sslmode': os.getenv('DB_SSLMODE', 'require'),
     }
+    
     ssl_root_cert = os.getenv('DB_SSLROOTCERT')
     if ssl_root_cert:
         db_options['sslrootcert'] = ssl_root_cert
