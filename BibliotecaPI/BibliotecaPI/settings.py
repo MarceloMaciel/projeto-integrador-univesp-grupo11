@@ -45,7 +45,10 @@ def env_list(name: str, default: str = '') -> list[str]:
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 DEBUG = env_bool('DEBUG', True)
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '127.0.0.1,localhost')
+if DEBUG:
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+else:
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 RUNNING_TESTS = 'test' in sys.argv
 
 if not DEBUG and not RUNNING_TESTS and SECRET_KEY == 'django-insecure-change-me-in-production':
@@ -68,6 +71,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -76,6 +80,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ROOT_URLCONF = 'BibliotecaPI.urls'
 
@@ -97,49 +103,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'BibliotecaPI.wsgi.application'
 
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-DB_ENGINE_ALIASES = {
-    'sqlite': 'django.db.backends.sqlite3',
-    'sqlite3': 'django.db.backends.sqlite3',
-    'postgres': 'django.db.backends.postgresql',
-    'postgresql': 'django.db.backends.postgresql',
-}
-
-DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite3').strip()
-DB_ENGINE = DB_ENGINE_ALIASES.get(DB_ENGINE, DB_ENGINE)
-
-if DB_ENGINE == 'django.db.backends.sqlite3':
-    sqlite_name = os.getenv('DB_NAME', 'db.sqlite3')
-    sqlite_path = Path(sqlite_name)
-    if not sqlite_path.is_absolute():
-        sqlite_path = BASE_DIR / sqlite_path
-
+if DATABASE_URL:
     DATABASES = {
-            'default': dj_database_url.config()
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    db_options = {
-        'sslmode': os.getenv('DB_SSLMODE', 'require'),
-    }
-
-    ssl_root_cert = os.getenv('DB_SSLROOTCERT')
-    if ssl_root_cert:
-        db_options['sslrootcert'] = ssl_root_cert
-
+    # 🟢 DESENVOLVIMENTO (SQLite)
     DATABASES = {
         'default': {
-            'ENGINE': DB_ENGINE,
-            'NAME': os.getenv('DB_NAME', ''),
-            'USER': os.getenv('DB_USER', ''),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', ''),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'OPTIONS': db_options,
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    # For Aiven, sslmode=require is usually enough.
-    # If your compliance policy requires certificate validation,
-    # use DB_SSLMODE=verify-ca or verify-full and set DB_SSLROOTCERT.
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -163,7 +140,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'core/static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
