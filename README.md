@@ -1,176 +1,255 @@
-# BibliotecaPI - Projeto Integrador Univesp Grupo 11
+# BibliotecaPI - Projeto Integrador UNIVESP (Grupo 11)
 
-Sistema web de gerenciamento de biblioteca desenvolvido em Django, com autenticação, catálogo bibliográfico, controle de exemplares, circulação de empréstimos e reservas, e preparação para PostgreSQL no Aiven.
+Sistema web de gerenciamento de biblioteca desenvolvido com Django, incluindo autenticação, catálogo, controle de exemplares e circulação (empréstimos e reservas).
 
-## Visão Geral
+---
 
-A aplicação usa a autenticação padrão do Django e mantém o fluxo acadêmico original de login, logout, troca obrigatória de senha no primeiro acesso, cadastro de usuários e entrada de acervo por lote de nota fiscal.
+## 🌐 Acesso (produção)
 
-A modelagem foi organizada em apps:
+Aplicação disponível em:
 
-- `core`: home, troca de senha, lote de entrada e modelos legados mantidos por compatibilidade.
-- `apps.usuarios`: cadastro de usuários, grupos e permissões.
-- `apps.catalogo`: autores, editoras, categorias e livros/obras.
-- `apps.acervo`: exemplares físicos vinculados aos livros.
-- `apps.circulacao`: empréstimos, devoluções, reservas, multas e auditoria.
+https://projeto-integrador-univesp-grupo11.onrender.com
 
-## Stack
+---
 
-- Python
-- Django 6.0.3
-- Django Templates
-- Bootstrap 5.3.3
-- SQLite para desenvolvimento local simples
-- PostgreSQL via `psycopg` para ambientes com Aiven
+## 🧠 Visão Geral
 
-## Rotas Principais
+O sistema utiliza autenticação padrão do Django e contempla:
 
-- `/`: painel inicial com indicadores do acervo.
-- `/login/` e `/logout/`: autenticação.
-- `/trocar-senha/`: troca obrigatória da senha inicial.
-- `/usuarios/cadastrar/`: cadastro de usuários.
-- `/catalogo/`: consulta do catálogo, com filtros por título, autor, ISBN, categoria e disponibilidade.
-- `/catalogo/livros/novo/`: cadastro de obras.
-- `/acervo/exemplares/`: gestão de exemplares físicos.
-- `/circulacao/emprestimos/`: empréstimos, renovações e devoluções.
-- `/circulacao/reservas/`: reservas.
-- `/iniciar-lote/` e `/cadastrar-livro/`: entrada de exemplares por lote de nota fiscal.
+* Login e logout
+* Troca obrigatória de senha no primeiro acesso
+* Cadastro de usuários
+* Gestão de catálogo (livros, autores, categorias)
+* Controle de exemplares físicos
+* Empréstimos, devoluções e reservas
 
-## Permissões
+Arquitetura baseada em apps:
 
-- `ADMIN` e `BIBLIOTECARIO`: podem cadastrar usuários, obras, autores, editoras, categorias, exemplares, lotes, empréstimos e devoluções.
-- `LEITOR`: pode consultar o catálogo e criar/acompanhar as próprias reservas.
-- Superusuários do Django são tratados como `ADMIN` pelo sistema.
+* `core`: funcionalidades gerais (home, autenticação, etc.)
+* `apps.usuarios`: usuários e permissões
+* `apps.catalogo`: livros e metadados
+* `apps.acervo`: exemplares
+* `apps.circulacao`: empréstimos e reservas
 
-## Configuração Local
+---
 
-Crie e ative o ambiente virtual:
+## 🛠️ Stack
 
-```powershell
-python -m venv venv
-venv\Scripts\activate
-```
+* Python
+* Django 6
+* SQLite (desenvolvimento local)
+* PostgreSQL (produção)
+* Gunicorn
+* WhiteNoise
+* Bootstrap
 
-Instale as dependências:
+---
 
-```powershell
-pip install -r requirements.txt
-```
+## ⚙️ Execução Local (desenvolvimento)
 
-Copie o arquivo de ambiente:
+### 1. Clonar o repositório
 
-```powershell
-Copy-Item .env.example .env
-```
-
-O arquivo `.env` é local e fica fora do versionamento. Use `.env.example` como modelo.
-
-Por padrão, o `.env.example` usa SQLite:
-
-```env
-DEBUG=True
-DB_ENGINE=sqlite3
-DB_NAME=db.sqlite3
-```
-
-Entre na pasta do projeto Django:
-
-```powershell
+```bash
+git clone <url-do-repositorio>
 cd BibliotecaPI
 ```
 
-Execute as migrations:
+---
 
-```powershell
+### 2. Criar e ativar ambiente virtual
+
+```bash
+python -m venv venv
+venv\Scripts\activate   # Windows
+```
+
+---
+
+### 3. Instalar dependências
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 4. Rodar migrations
+
+```bash
+cd BibliotecaPI
 python manage.py migrate
 ```
 
-Crie um superusuário:
+---
 
-```powershell
+### 5. Criar superusuário
+
+```bash
 python manage.py createsuperuser
 ```
 
-Rode o servidor local:
+---
 
-```powershell
+### 6. Rodar servidor
+
+```bash
 python manage.py runserver
 ```
 
 Acesse:
 
-```text
+```
 http://127.0.0.1:8000/
 ```
 
-## Variáveis de Ambiente
+---
 
-O projeto lê `.env` na raiz do repositório e também aceita `.env` ao lado de `manage.py`.
+## 🗄️ Banco de Dados
 
-Principais variáveis:
+O projeto detecta automaticamente o ambiente:
 
-```env
-SECRET_KEY=django-insecure-troque-esta-chave
-DEBUG=True
-ALLOWED_HOSTS=127.0.0.1,localhost
-DB_ENGINE=sqlite3
-DB_NAME=db.sqlite3
-DB_USER=
-DB_PASSWORD=
-DB_HOST=
-DB_PORT=5432
-DB_SSLMODE=require
-DB_SSLROOTCERT=
+* Sem `DATABASE_URL` → usa SQLite (local)
+* Com `DATABASE_URL` → usa PostgreSQL
+
+---
+
+## 🚀 Deploy no Render
+
+### ✔ Pré-requisitos
+
+* Conta no Render
+* Repositório no GitHub
+
+---
+
+### 1. Criar banco PostgreSQL
+
+No painel do Render:
+
+```
+New → PostgreSQL
 ```
 
-## PostgreSQL no Aiven
+Copie a variável:
 
-Para usar PostgreSQL no Aiven, ajuste o `.env` com os dados do serviço:
+```
+DATABASE_URL
+```
 
-```env
+---
+
+### 2. Criar Web Service
+
+```
+New → Web Service
+```
+
+Conecte ao repositório.
+
+---
+
+### 3. Configurar o serviço
+
+#### Build Command
+
+```bash
+pip install -r requirements.txt
+```
+
+#### Start Command
+
+```bash
+python manage.py migrate && \
+python manage.py collectstatic --noinput && \
+gunicorn BibliotecaPI.wsgi:application
+```
+
+---
+
+### 4. Variáveis de ambiente
+
+No Render:
+
+```
+Environment → Add Variable
+```
+
+Adicionar:
+
+```
 DEBUG=False
-ALLOWED_HOSTS=seu-dominio.com,127.0.0.1
-DB_ENGINE=postgresql
-DB_NAME=nome_do_banco
-DB_USER=usuario_aiven
-DB_PASSWORD=senha_aiven
-DB_HOST=host-do-servico.aivencloud.com
-DB_PORT=12345
-DB_SSLMODE=require
-DB_SSLROOTCERT=
+SECRET_KEY=sua-chave-segura
+ALLOWED_HOSTS=projeto-integrador-univesp-grupo11.onrender.com
+DATABASE_URL=postgres://...
 ```
 
-Em Aiven, `sslmode=require` costuma ser suficiente para criptografar a conexão. Se a política do ambiente exigir validação do certificado, use `DB_SSLMODE=verify-ca` ou `DB_SSLMODE=verify-full` e informe o caminho do certificado CA em `DB_SSLROOTCERT`.
+---
 
-Depois de apontar para o PostgreSQL, rode:
+### 5. Deploy
 
-```powershell
-cd BibliotecaPI
-python manage.py migrate
-python manage.py createsuperuser
+Após salvar, o Render fará o deploy automaticamente.
+
+---
+
+## 🎨 Arquivos Estáticos
+
+* Local: servidos automaticamente pelo Django
+* Produção: coletados com `collectstatic` e servidos via WhiteNoise
+
+---
+
+## 🔐 Administração
+
+Painel admin:
+
+```
+/admin
 ```
 
-## Testes
+---
 
-Execute:
+## ⚠️ Problemas comuns
 
-```powershell
-cd BibliotecaPI
-python manage.py test
+### ❌ DisallowedHost
+
+Verifique `ALLOWED_HOSTS`
+
+---
+
+### ❌ Static não carrega
+
+* Rodar `collectstatic`
+* Verificar WhiteNoise
+
+---
+
+### ❌ Gunicorn não encontrado
+
+Verificar `requirements.txt`
+
+---
+
+## 👥 Colaboração
+
+* Código: GitHub
+* Infraestrutura: Render (Team)
+
+---
+
+## 📦 Estrutura
+
+```
+BibliotecaPI/
+├── manage.py
+├── BibliotecaPI/
+├── core/
+├── apps/
+├── templates/
+└── static/
 ```
 
-Os testes cobrem login/redirecionamento, troca obrigatória de senha, permissões, cadastro de livro, busca e paginação do acervo, renderização dos formulários, cadastro por lote, empréstimo/devolução com mudança de status do exemplar e validação da data de devolução.
+---
 
-## Administração
+## 🧾 Licença
 
-O admin do Django está disponível em:
-
-```text
-http://127.0.0.1:8000/admin/
-```
-
-Os grupos padrão `ADMIN`, `BIBLIOTECARIO` e `LEITOR` são criados automaticamente após as migrations. Usuários com perfil de administrador ou bibliotecário podem cadastrar usuários, obras, exemplares e registrar circulação. O admin usa filtros, buscas, paginação, campos de autocomplete e títulos customizados para facilitar demonstração e operação.
-
-## Interface
-
-A interface usa templates Django em `BibliotecaPI/templates`, Bootstrap 5.3.3 via CDN e ajustes simples em `BibliotecaPI/static/css/app.css`. O `base.html` centraliza navegação, mensagens, bloco de cabeçalho de página e rodapé. Os formulários compartilham o partial `templates/partials/form_fields.html`, e os templates antigos dentro de `core/templates/core` foram removidos para evitar duplicação e rotas legadas.
+Projeto acadêmico - UNIVESP
