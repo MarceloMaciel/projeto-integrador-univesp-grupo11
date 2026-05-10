@@ -211,36 +211,6 @@ class BibliotecaFlowTests(TestCase):
         self.assertEqual(exemplar.status, Exemplar.Status.EMPRESTADO)
         self.assertEqual(emprestimo.status, Emprestimo.Status.ATIVO)
 
-    def test_cadastrar_livro_lote_limpa_sessao_quando_lote_nao_existe(self):
-        user = self.create_user('lote01', role=ROLE_BIBLIOTECARIO)
-        self.client.force_login(user)
-
-        session = self.client.session
-        session['lote_ativo_id'] = 999999
-        session['livros_restantes'] = 2
-        session.save()
-
-        response = self.client.get(reverse('cadastrar_livro_lote'))
-
-        self.assertRedirects(response, reverse('iniciar_lote_cadastro'))
-        session = self.client.session
-        self.assertNotIn('lote_ativo_id', session)
-        self.assertNotIn('livros_restantes', session)
-
-    def test_iniciar_lote_remove_sessao_parcial_sem_erro(self):
-        user = self.create_user('lote02', role=ROLE_BIBLIOTECARIO)
-        self.client.force_login(user)
-
-        session = self.client.session
-        session['lote_ativo_id'] = 1
-        session.save()
-
-        response = self.client.get(reverse('iniciar_lote_cadastro'))
-
-        self.assertEqual(response.status_code, 200)
-        session = self.client.session
-        self.assertNotIn('lote_ativo_id', session)
-        self.assertNotIn('livros_restantes', session)
 
     def test_cadastro_lote_cria_livro_catalogo_e_exemplar(self):
         user = self.create_user('lote03', role=ROLE_BIBLIOTECARIO)

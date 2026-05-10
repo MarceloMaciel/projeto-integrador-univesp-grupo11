@@ -17,8 +17,7 @@ class BootstrapFormMixin:
 class AutorForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Autor
-        fields = ['nome', 'nacionalidade', 'data_nascimento']
-        widgets = {'data_nascimento': forms.DateInput(attrs={'type': 'date'})}
+        fields = ['nome']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +27,7 @@ class AutorForm(BootstrapFormMixin, forms.ModelForm):
 class EditoraForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Editora
-        fields = ['nome', 'cidade']
+        fields = ['nome']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,8 +37,7 @@ class EditoraForm(BootstrapFormMixin, forms.ModelForm):
 class CategoriaForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = ['nome', 'descricao']
-        widgets = {'descricao': forms.Textarea(attrs={'rows': 3})}
+        fields = ['nome']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -51,20 +49,13 @@ class LivroForm(BootstrapFormMixin, forms.ModelForm):
         model = Livro
         fields = [
             'titulo',
-            'subtitulo',
             'isbn',
             'ano_publicacao',
-            'edicao',
-            'resumo',
-            'capa',
             'autores',
             'editora',
-            'categorias',
         ]
         widgets = {
-            'resumo': forms.Textarea(attrs={'rows': 4}),
             'autores': forms.SelectMultiple(attrs={'size': 6}),
-            'categorias': forms.SelectMultiple(attrs={'size': 6}),
         }
 
     def __init__(self, *args, **kwargs):
