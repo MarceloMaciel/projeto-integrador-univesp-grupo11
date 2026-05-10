@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -23,7 +23,7 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:livro_list' %}">Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'circulacao:reserva_list' %}">Reservas</a></li>
-                    {% if is_admin_or_bibliotecario %}
+                    {% if is_admin %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'acervo:exemplar_list' %}">Exemplares</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'circulacao:emprestimo_list' %}">Empréstimos</a></li>
                         <li class="nav-item dropdown">
@@ -33,6 +33,9 @@
                                 <li><a class="dropdown-item" href="{% url 'catalogo:autor_list' %}">Autores</a></li>
                                 <li><a class="dropdown-item" href="{% url 'catalogo:editora_list' %}">Editoras</a></li>
                                 <li><a class="dropdown-item" href="{% url 'catalogo:categoria_list' %}">Categorias</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'importacao:importar_csv' %}">Importar via CSV</a></li>
+                            </ul>
                         </li>
                     {% endif %}
                 </ul>

@@ -1,10 +1,10 @@
-﻿from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group
 
-from .constants import ROLE_ADMIN, ROLE_BIBLIOTECARIO, ROLE_LEITOR
+from .constants import ROLE_ADMIN, ROLE_LEITOR
 
 
 def ensure_default_groups() -> None:
-    for role in (ROLE_ADMIN, ROLE_BIBLIOTECARIO, ROLE_LEITOR):
+    for role in (ROLE_ADMIN, ROLE_LEITOR):
         Group.objects.get_or_create(name=role)
 
 

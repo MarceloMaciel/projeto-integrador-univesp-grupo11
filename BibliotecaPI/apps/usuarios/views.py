@@ -1,18 +1,18 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 
 from core.models import PerfilUsuario
 
-from .constants import ROLE_ADMIN, ROLE_BIBLIOTECARIO
+from .constants import ROLE_ADMIN
 from .forms import UsuarioCadastroForm
 from .utils import user_has_any_role
 
 
 @login_required
 def cadastrar_usuario(request):
-    if not user_has_any_role(request.user, [ROLE_ADMIN, ROLE_BIBLIOTECARIO]):
+    if not user_has_any_role(request.user, [ROLE_ADMIN]):
         messages.error(request, 'Você não possui permissão para cadastrar usuários.')
         return redirect('home')
 
