@@ -45,10 +45,10 @@ def env_list(name: str, default: str = '') -> list[str]:
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 DEBUG = env_bool('DEBUG', True)
-if DEBUG:
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-else:
-    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+_extra_hosts = os.getenv('ALLOWED_HOSTS', '')
+if _extra_hosts:
+    ALLOWED_HOSTS += [h.strip() for h in _extra_hosts.split(',') if h.strip()]
 RUNNING_TESTS = 'test' in sys.argv
 
 if not DEBUG and not RUNNING_TESTS and SECRET_KEY == 'django-insecure-change-me-in-production':
