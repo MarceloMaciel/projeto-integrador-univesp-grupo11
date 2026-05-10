@@ -17,7 +17,7 @@ from apps.usuarios.permissions import AdminOrBibliotecarioRequiredMixin
 from apps.usuarios.utils import user_has_any_role
 
 from .forms import DevolucaoForm, EmprestimoForm, ReservaForm
-from .models import Auditoria, Emprestimo, Multa, Reserva
+from .models import Emprestimo, Multa, Reserva
 
 
 class EmprestimoListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, ListView):
@@ -26,7 +26,6 @@ class EmprestimoListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, 
     context_object_name = 'emprestimos'
 
     def get_queryset(self):
-        # Mantem a lista coerente mesmo quando um empréstimo vence entre acessos.
         Emprestimo.objects.filter(
             status=Emprestimo.Status.ATIVO,
             data_prevista_devolucao__lt=timezone.localdate(),
@@ -46,13 +45,6 @@ class EmprestimoCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin
         exemplar = self.object.exemplar
         exemplar.status = Exemplar.Status.EMPRESTADO
         exemplar.save(update_fields=['status'])
-
-        Auditoria.objects.create(
-            usuario=self.request.user,
-            acao='CRIAR_EMPRESTIMO',
-            entidade='Emprestimo',
-            registro_id=self.object.id,
-        )
         messages.success(self.request, 'Empréstimo registrado com sucesso.')
         return response
 
@@ -79,16 +71,8 @@ class ReservaCreateView(LoginRequiredMixin, CreateView):
         form.instance.usuario = self.request.user
         if not form.instance.data_expiracao:
             form.instance.data_expiracao = timezone.localdate() + timedelta(days=3)
-
-        response = super().form_valid(form)
-        Auditoria.objects.create(
-            usuario=self.request.user,
-            acao='CRIAR_RESERVA',
-            entidade='Reserva',
-            registro_id=self.object.id,
-        )
         messages.success(self.request, 'Reserva criada com sucesso.')
-        return response
+        return super().form_valid(form)
 
 
 @login_required
@@ -125,13 +109,6 @@ def registrar_devolucao(request, pk):
                     },
                 )
 
-            Auditoria.objects.create(
-                usuario=request.user,
-                acao='REGISTRAR_DEVOLUCAO',
-                entidade='Emprestimo',
-                registro_id=emprestimo.id,
-            )
-
             messages.success(request, 'Devolução registrada com sucesso.')
             return redirect('circulacao:emprestimo_list')
     else:
@@ -153,16 +130,10 @@ def renovar_emprestimo(request, pk):
         messages.warning(request, 'Empréstimos já devolvidos não podem ser renovados.')
         return redirect('circulacao:emprestimo_list')
 
-    emprestimo.data_prevista_devolucao = emprestimo.data_prevista_devolucao + timedelta(days=7)
+    emprestimo.data_prevista_devolucao += timedelta(days=7)
     if emprestimo.data_prevista_devolucao >= timezone.localdate():
         emprestimo.status = Emprestimo.Status.ATIVO
     emprestimo.save(update_fields=['data_prevista_devolucao', 'status'])
 
-    Auditoria.objects.create(
-        usuario=request.user,
-        acao='RENOVAR_EMPRESTIMO',
-        entidade='Emprestimo',
-        registro_id=emprestimo.id,
-    )
     messages.success(request, 'Empréstimo renovado por mais 7 dias.')
     return redirect('circulacao:emprestimo_list')

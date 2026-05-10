@@ -6,13 +6,14 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.acervo.models import Exemplar
-from apps.catalogo.models import Autor, Categoria, Editora, Livro as LivroCatalogo
+from apps.catalogo.models import Autor, Categoria, Editora, Livro
 from apps.circulacao.models import Emprestimo
 from apps.usuarios.constants import ROLE_BIBLIOTECARIO, ROLE_LEITOR
-from core.models import LoteCadastro, PerfilUsuario
+from core.models import PerfilUsuario
 
 
 class BibliotecaFlowTests(TestCase):
+
     def create_user(self, username, role=ROLE_LEITOR, precisa_trocar_senha=False):
         user = User.objects.create_user(username=username, password='SenhaForte123!')
         PerfilUsuario.objects.create(
@@ -29,18 +30,17 @@ class BibliotecaFlowTests(TestCase):
         autor = Autor.objects.create(nome=f'Autor {titulo}')
         editora = Editora.objects.create(nome=f'Editora {titulo}')
         categoria = Categoria.objects.create(nome=f'Categoria {titulo}')
-        livro = LivroCatalogo.objects.create(
+        livro = Livro.objects.create(
             titulo=titulo,
-            isbn=f'97812345{LivroCatalogo.objects.count():05d}',
+            isbn=f'97812345{Livro.objects.count():05d}',
             ano_publicacao=2025,
             editora=editora,
+            categoria=categoria,
         )
         livro.autores.add(autor)
-        livro.categorias.add(categoria)
         exemplar = Exemplar.objects.create(
             livro=livro,
-            codigo_tombo=f'TOMBO-{LivroCatalogo.objects.count():05d}',
-            localizacao_fisica='Estante A1',
+            codigo_tombo=f'TOMBO-{Livro.objects.count():05d}',
             status=status,
         )
         return livro, exemplar
@@ -75,19 +75,15 @@ class BibliotecaFlowTests(TestCase):
             reverse('catalogo:livro_create'),
             data={
                 'titulo': 'Dom Casmurro',
-                'subtitulo': '',
                 'isbn': '9788535914849',
                 'ano_publicacao': 1899,
-                'edicao': '1',
-                'resumo': 'Romance brasileiro.',
                 'autores': [autor.id],
                 'editora': editora.id,
-                'categorias': [categoria.id],
             },
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(LivroCatalogo.objects.filter(titulo='Dom Casmurro').exists())
+        self.assertTrue(Livro.objects.filter(titulo='Dom Casmurro').exists())
 
     def test_busca_de_acervo(self):
         user = self.create_user('leitor02', role=ROLE_LEITOR)
@@ -210,38 +206,3 @@ class BibliotecaFlowTests(TestCase):
         emprestimo.refresh_from_db()
         self.assertEqual(exemplar.status, Exemplar.Status.EMPRESTADO)
         self.assertEqual(emprestimo.status, Emprestimo.Status.ATIVO)
-
-
-    def test_cadastro_lote_cria_livro_catalogo_e_exemplar(self):
-        user = self.create_user('lote03', role=ROLE_BIBLIOTECARIO)
-        lote = LoteCadastro.objects.create(usuario=user, nota_fiscal='NF-001', quantidade=1)
-        self.client.force_login(user)
-
-        session = self.client.session
-        session['lote_ativo_id'] = lote.id
-        session['livros_restantes'] = 1
-        session.save()
-
-        response = self.client.post(
-            reverse('cadastrar_livro_lote'),
-            data={
-                'titulo': 'Sistemas de Biblioteca',
-                'subtitulo': '',
-                'isbn': '9781234567897',
-                'ano_publicacao': 2026,
-                'edicao': '1',
-                'autor': 'Autor do Lote',
-                'editora': 'Editora do Lote',
-                'categoria': 'Gestao',
-                'codigo_tombo': 'TOMBO-LOTE-001',
-                'codigo_barras_interno': '',
-                'localizacao_fisica': 'Estante L1',
-                'observacoes': '',
-            },
-        )
-
-        self.assertRedirects(response, reverse('home'))
-        livro = LivroCatalogo.objects.get(isbn='9781234567897')
-        exemplar = Exemplar.objects.get(codigo_tombo='TOMBO-LOTE-001')
-        self.assertEqual(exemplar.livro, livro)
-        self.assertEqual(exemplar.lote_cadastro, lote)

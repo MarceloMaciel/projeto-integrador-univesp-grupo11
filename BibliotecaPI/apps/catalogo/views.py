@@ -121,8 +121,8 @@ class LivroListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = (
-            Livro.objects.select_related('editora')
-            .prefetch_related('autores', 'categorias')
+            Livro.objects.select_related('editora', 'categoria')
+            .prefetch_related('autores')
             .annotate(total_exemplares=Count('exemplares', distinct=True))
             .annotate(
                 exemplares_disponiveis=Count(
@@ -142,13 +142,13 @@ class LivroListView(LoginRequiredMixin, ListView):
             disponivel = form.cleaned_data.get('disponivel')
 
             if q:
-                queryset = queryset.filter(Q(titulo__icontains=q) | Q(subtitulo__icontains=q))
+                queryset = queryset.filter(titulo__icontains=q)
             if autor:
                 queryset = queryset.filter(autores__nome__icontains=autor)
             if isbn:
                 queryset = queryset.filter(isbn__icontains=isbn)
             if categoria:
-                queryset = queryset.filter(categorias=categoria)
+                queryset = queryset.filter(categoria=categoria)
             if disponivel:
                 queryset = queryset.filter(exemplares__status=Exemplar.Status.DISPONIVEL)
 

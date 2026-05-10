@@ -90,26 +90,3 @@ class Multa(models.Model):
 
     def __str__(self):
         return f'Multa {self.id} - R$ {self.valor}'
-
-
-class Auditoria(models.Model):
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='auditorias',
-        verbose_name='Usuário',
-    )
-    acao = models.CharField(max_length=80, verbose_name='Ação')
-    entidade = models.CharField(max_length=80, verbose_name='Entidade')
-    registro_id = models.PositiveIntegerField(verbose_name='ID do registro')
-    data_hora = models.DateTimeField(auto_now_add=True, verbose_name='Data e hora')
-
-    class Meta:
-        ordering = ['-data_hora']
-        verbose_name = 'Auditoria'
-        verbose_name_plural = 'Auditorias'
-
-    def __str__(self):
-        return f'{self.acao} em {self.entidade}#{self.registro_id}'

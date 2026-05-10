@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'apps.catalogo.apps.CatalogoConfig',
     'apps.acervo.apps.AcervoConfig',
     'apps.circulacao.apps.CirculacaoConfig',
+    'apps.importacao.apps.ImportacaoConfig',
 ]
 
 MIDDLEWARE = [

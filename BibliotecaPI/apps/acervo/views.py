@@ -15,7 +15,7 @@ class ExemplarListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, Li
     context_object_name = 'exemplares'
 
     def get_queryset(self):
-        return Exemplar.objects.select_related('livro', 'lote_cadastro')
+        return Exemplar.objects.select_related('livro')
 
 
 class ExemplarCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, SuccessMessageMixin, CreateView):
