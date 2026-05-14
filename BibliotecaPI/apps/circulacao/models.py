@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,12 +14,28 @@ class Emprestimo(models.Model):
         DEVOLVIDO = 'DEVOLVIDO', 'Devolvido'
         ATRASADO = 'ATRASADO', 'Atrasado'
 
-    exemplar = models.ForeignKey('acervo.Exemplar', on_delete=models.PROTECT, related_name='emprestimos', verbose_name='Exemplar')
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='emprestimos', verbose_name='Usuário')
+    exemplar = models.ForeignKey(
+        'acervo.Exemplar',
+        on_delete=models.PROTECT,
+        related_name='emprestimos',
+        verbose_name='Exemplar',
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='emprestimos',
+        verbose_name='Usuário',
+    )
     data_emprestimo = models.DateField(auto_now_add=True, verbose_name='Data do empréstimo')
     data_prevista_devolucao = models.DateField(verbose_name='Data prevista de devolução')
     data_devolucao = models.DateField(null=True, blank=True, verbose_name='Data de devolução')
-    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ATIVO, db_index=True, verbose_name='Situação')
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.ATIVO,
+        db_index=True,
+        verbose_name='Situação',
+    )
 
     class Meta:
         ordering = ['-data_emprestimo']
@@ -36,7 +53,7 @@ class Emprestimo(models.Model):
         return f'Empréstimo {self.id} - {self.exemplar.codigo_tombo}'
 
     def clean(self):
-        if not self.pk and self.exemplar_id and self.exemplar.status != 'DISPONIVEL':
+        if not self.pk and self.exemplar_id and self.exemplar.status not in {'DISPONIVEL', 'RESERVADO'}:
             raise ValidationError({'exemplar': 'Exemplar indisponível para empréstimo.'})
         if self.data_devolucao and self.data_emprestimo and self.data_devolucao < self.data_emprestimo:
             raise ValidationError({'data_devolucao': 'A data de devolução não pode ser anterior ao empréstimo.'})
@@ -53,19 +70,88 @@ class Reserva(models.Model):
         CANCELADA = 'CANCELADA', 'Cancelada'
         EXPIRADA = 'EXPIRADA', 'Expirada'
 
-    livro = models.ForeignKey('catalogo.Livro', on_delete=models.CASCADE, related_name='reservas', verbose_name='Livro')
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reservas', verbose_name='Usuário')
+    class Tipo(models.TextChoices):
+        FILA = 'FILA', 'Fila de espera'
+        RETIRADA = 'RETIRADA', 'Retirada no balcão'
+
+    livro = models.ForeignKey(
+        'catalogo.Livro',
+        on_delete=models.CASCADE,
+        related_name='reservas',
+        verbose_name='Livro',
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reservas',
+        verbose_name='Usuário',
+    )
+    exemplar = models.ForeignKey(
+        'acervo.Exemplar',
+        on_delete=models.SET_NULL,
+        related_name='reservas',
+        null=True,
+        blank=True,
+        verbose_name='Exemplar separado',
+    )
+    protocolo = models.CharField(
+        max_length=24,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Protocolo',
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=Tipo.choices,
+        default=Tipo.FILA,
+        db_index=True,
+        verbose_name='Tipo',
+    )
     data_reserva = models.DateField(auto_now_add=True, verbose_name='Data da reserva')
     data_expiracao = models.DateField(null=True, blank=True, verbose_name='Data de expiração')
-    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ATIVA, db_index=True, verbose_name='Situação')
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.ATIVA,
+        db_index=True,
+        verbose_name='Situação',
+    )
 
     class Meta:
-        ordering = ['-data_reserva']
+        ordering = ['data_reserva', 'id']
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['livro', 'usuario'],
+                condition=Q(status='ATIVA'),
+                name='unique_reserva_ativa_por_livro_usuario',
+            )
+        ]
 
     def __str__(self):
-        return f'Reserva {self.id} - {self.livro.titulo}'
+        return f'Reserva {self.protocolo or self.id} - {self.livro.titulo}'
+
+    def clean(self):
+        if self.exemplar_id and self.exemplar.livro_id != self.livro_id:
+            raise ValidationError({'exemplar': 'O exemplar precisa pertencer ao livro reservado.'})
+
+    def save(self, *args, **kwargs):
+        if not self.protocolo:
+            self.protocolo = self.gerar_protocolo()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def gerar_protocolo(cls):
+        while True:
+            protocolo = f'RSV-{timezone.now():%Y%m%d}-{uuid4().hex[:6].upper()}'
+            if not cls.objects.filter(protocolo=protocolo).exists():
+                return protocolo
+
+    @property
+    def pronta_para_retirada(self):
+        return self.status == self.Status.ATIVA and self.exemplar_id is not None
 
 
 class Multa(models.Model):
@@ -73,7 +159,12 @@ class Multa(models.Model):
         PENDENTE = 'PENDENTE', 'Pendente'
         PAGO = 'PAGO', 'Pago'
 
-    emprestimo = models.OneToOneField(Emprestimo, on_delete=models.CASCADE, related_name='multa', verbose_name='Empréstimo')
+    emprestimo = models.OneToOneField(
+        Emprestimo,
+        on_delete=models.CASCADE,
+        related_name='multa',
+        verbose_name='Empréstimo',
+    )
     valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name='Valor')
     motivo = models.CharField(max_length=255, verbose_name='Motivo')
     status_pagamento = models.CharField(

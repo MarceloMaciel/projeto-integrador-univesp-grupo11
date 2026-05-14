@@ -23,9 +23,9 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:livro_list' %}">Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'circulacao:reserva_list' %}">Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'circulacao:emprestimo_list' %}">Empréstimos</a></li>
                     {% if is_admin %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'acervo:exemplar_list' %}">Exemplares</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'circulacao:emprestimo_list' %}">Empréstimos</a></li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Administração</a>
                             <ul class="dropdown-menu">

@@ -1,4 +1,4 @@
-﻿from django.db import models
+from django.db import models
 from apps.catalogo.models import Livro
 
 class Exemplar(models.Model):
@@ -6,6 +6,7 @@ class Exemplar(models.Model):
     class Status(models.TextChoices):
         DISPONIVEL = 'DISPONIVEL', 'Disponível'
         EMPRESTADO = 'EMPRESTADO', 'Emprestado'
+        RESERVADO  = 'RESERVADO',  'Reservado'
 
     livro = models.ForeignKey(
         Livro,

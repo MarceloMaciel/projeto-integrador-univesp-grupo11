@@ -1,13 +1,17 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.db import transaction
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.utils import timezone
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, UpdateView
 
 from apps.acervo.models import Exemplar
 from apps.usuarios.permissions import AdminOrBibliotecarioRequiredMixin
 
-from .forms import AutorForm, BuscaAcervoForm, CategoriaForm, EditoraForm, LivroForm
+from .forms import AdicionarExemplarForm, AutorForm, BuscaAcervoForm, CategoriaForm, EditoraForm, LivroForm
 from .models import Autor, Categoria, Editora, Livro
 
 
@@ -20,13 +24,32 @@ class FormTitleMixin:
         return context
 
 
+class SuccessUrlMixin:
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return super().get_success_url()
+
+
+def criar_exemplares_para_livro(livro, quantidade):
+    ts = timezone.now().strftime('%Y%m%d%H%M%S%f')
+    for i in range(quantidade):
+        codigo_tombo = f'{livro.id}-{ts}-{i}'
+        Exemplar.objects.create(livro=livro, codigo_tombo=codigo_tombo)
+
+
+# ---------------------------------------------------------------------------
+# Autor
+# ---------------------------------------------------------------------------
+
 class AutorListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, ListView):
     model = Autor
     template_name = 'catalogo/autor_list.html'
     context_object_name = 'autores'
 
 
-class AutorCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, CreateView):
+class AutorCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, SuccessUrlMixin, CreateView):
     model = Autor
     form_class = AutorForm
     template_name = 'catalogo/form.html'
@@ -51,13 +74,17 @@ class AutorDeleteView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, Suc
     success_message = 'Autor excluído com sucesso.'
 
 
+# ---------------------------------------------------------------------------
+# Editora
+# ---------------------------------------------------------------------------
+
 class EditoraListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, ListView):
     model = Editora
     template_name = 'catalogo/editora_list.html'
     context_object_name = 'editoras'
 
 
-class EditoraCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, CreateView):
+class EditoraCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, SuccessUrlMixin, CreateView):
     model = Editora
     form_class = EditoraForm
     template_name = 'catalogo/form.html'
@@ -82,13 +109,17 @@ class EditoraDeleteView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, S
     success_message = 'Editora excluída com sucesso.'
 
 
+# ---------------------------------------------------------------------------
+# Categoria
+# ---------------------------------------------------------------------------
+
 class CategoriaListView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, ListView):
     model = Categoria
     template_name = 'catalogo/categoria_list.html'
     context_object_name = 'categorias'
 
 
-class CategoriaCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, CreateView):
+class CategoriaCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, SuccessUrlMixin, CreateView):
     model = Categoria
     form_class = CategoriaForm
     template_name = 'catalogo/form.html'
@@ -112,6 +143,10 @@ class CategoriaDeleteView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin,
     success_url = reverse_lazy('catalogo:categoria_list')
     success_message = 'Categoria excluída com sucesso.'
 
+
+# ---------------------------------------------------------------------------
+# Livro
+# ---------------------------------------------------------------------------
 
 class LivroListView(LoginRequiredMixin, ListView):
     model = Livro
@@ -146,7 +181,9 @@ class LivroListView(LoginRequiredMixin, ListView):
             if autor:
                 queryset = queryset.filter(autores__nome__icontains=autor)
             if isbn:
-                queryset = queryset.filter(isbn__icontains=isbn)
+                queryset = queryset.filter(
+                    Q(isbn_10__icontains=isbn) | Q(isbn_13__icontains=isbn)
+                )
             if categoria:
                 queryset = queryset.filter(categoria=categoria)
             if disponivel:
@@ -168,6 +205,9 @@ class LivroDetailView(LoginRequiredMixin, DetailView):
     template_name = 'catalogo/livro_detail.html'
     context_object_name = 'livro'
 
+    def get_queryset(self):
+        return Livro.objects.select_related('editora', 'categoria', 'capa').prefetch_related('autores', 'exemplares')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['exemplares'] = self.object.exemplares.order_by('codigo_tombo')
@@ -182,6 +222,14 @@ class LivroCreateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, For
     form_title = 'Livro'
     success_message = 'Livro cadastrado com sucesso.'
 
+    def form_valid(self, form):
+        with transaction.atomic():
+            response = super().form_valid(form)
+            form.save_capa(self.object)
+            quantidade = form.cleaned_data.get('quantidade_exemplares', 1)
+            criar_exemplares_para_livro(self.object, quantidade)
+        return response
+
 
 class LivroUpdateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormTitleMixin, SuccessMessageMixin, UpdateView):
     model = Livro
@@ -191,9 +239,49 @@ class LivroUpdateView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, For
     form_title = 'Livro'
     success_message = 'Livro atualizado com sucesso.'
 
+    def form_valid(self, form):
+        with transaction.atomic():
+            response = super().form_valid(form)
+            form.save_capa(self.object)
+        return response
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if 'quantidade_exemplares' in form.fields:
+            del form.fields['quantidade_exemplares']
+        return form
+
 
 class LivroDeleteView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, SuccessMessageMixin, DeleteView):
     model = Livro
     template_name = 'catalogo/confirm_delete.html'
     success_url = reverse_lazy('catalogo:livro_list')
     success_message = 'Livro excluído com sucesso.'
+
+
+class AdicionarExemplarView(LoginRequiredMixin, AdminOrBibliotecarioRequiredMixin, FormView):
+    form_class = AdicionarExemplarForm
+    template_name = 'catalogo/adicionar_exemplares.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.livro = get_object_or_404(
+            Livro.objects.select_related('editora', 'categoria').prefetch_related('autores'),
+            pk=kwargs['pk'],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['livro'] = self.livro
+        context['total_exemplares'] = self.livro.exemplares.count()
+        context['cancel_url'] = self.get_success_url()
+        return context
+
+    def form_valid(self, form):
+        quantidade = form.cleaned_data['quantidade']
+        criar_exemplares_para_livro(self.livro, quantidade)
+        messages.success(self.request, f'{quantidade} exemplar(es) cadastrado(s) com sucesso.')
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return self.request.GET.get('next') or reverse_lazy('catalogo:livro_list')
